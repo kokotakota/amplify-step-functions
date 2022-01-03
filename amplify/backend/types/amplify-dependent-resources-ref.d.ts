@@ -6,5 +6,12 @@ export type AmplifyDependentResourcesAttributes = {
             "Region": "string",
             "LambdaExecutionRole": "string"
         }
+    },
+    "stepFunction": {
+        "sampleStep": {
+            "Arn": "string",
+            "Region": "string",
+            "RoleName": "string"
+        }
     }
 }

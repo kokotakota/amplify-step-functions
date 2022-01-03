@@ -5,5 +5,20 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     }
+  },
+  "stepFunction": {
+    "sampleStep": {
+      "service": "Step Function",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "sample",
+          "attributes": [
+            "Arn"
+          ]
+        }
+      ]
+    }
   }
 }
