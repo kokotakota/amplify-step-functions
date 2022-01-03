@@ -8,7 +8,16 @@
     "executeSampleStep": {
       "build": true,
       "providerPlugin": "awscloudformation",
-      "service": "Lambda"
+      "service": "Lambda",
+      "dependsOn": [
+        {
+          "category": "stepFunction",
+          "resourceName": "sampleStep",
+          "attributes": [
+            "Arn"
+          ]
+        }
+      ]
     }
   },
   "stepFunction": {

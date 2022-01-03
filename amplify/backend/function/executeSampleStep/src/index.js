@@ -1,15 +1,19 @@
-
+const AWS = require('aws-sdk')
+AWS.config.update({
+  region: process.env['REGION']
+})
 
 exports.handler = async (event) => {
-    // TODO implement
-    const response = {
-        statusCode: 200,
-    //  Uncomment below to enable CORS requests
-    //  headers: {
-    //      "Access-Control-Allow-Origin": "*",
-    //      "Access-Control-Allow-Headers": "*"
-    //  }, 
-        body: JSON.stringify('Hello from Lambda!'),
-    };
-    return response;
-};
+  const stateMachineArn = process.env['STEPFUNCTION_SAMPLESTEP_ARN']
+  const params = {
+    stateMachineArn,
+    input: JSON.stringify({param1: '1', param2: '2'})
+  }
+  const stepFunctions = new AWS.StepFunctions()
+  try {
+    await stepFunctions.startExecution(params).promise()
+  } catch (error) {
+    console.log(`Step Functions: "${stateMachineArn}" の実行に失敗しました。`)
+    throw error
+  }
+}
