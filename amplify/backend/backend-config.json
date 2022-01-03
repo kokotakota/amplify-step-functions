@@ -4,6 +4,35 @@
       "build": true,
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
+    },
+    "executeSampleStep": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "dependsOn": [
+        {
+          "category": "stepFunction",
+          "resourceName": "sampleStep",
+          "attributes": [
+            "Arn"
+          ]
+        }
+      ]
+    }
+  },
+  "stepFunction": {
+    "sampleStep": {
+      "service": "Step Function",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "sample",
+          "attributes": [
+            "Arn"
+          ]
+        }
+      ]
     }
   }
 }

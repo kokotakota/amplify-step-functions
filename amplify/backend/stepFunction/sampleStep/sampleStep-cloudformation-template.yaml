@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  env:
+    Type: String
+  functionsampleArn:
+    Type: String
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+      - Ref: env
+      - NONE
+Resources:
+  StatesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - SampleStatesExecutionRole
+          - Fn::Join:
+              - ''
+              - - SampleStatesExecutionRole
+                - '-'
+                - Ref: env
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - Fn::Sub: states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: '*'
+  SampleStepStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - sampleStep
+          - Fn::Join:
+              - ''
+              - - sampleStep
+                - '-'
+                - Ref: env
+      DefinitionString:
+        Fn::Sub:
+          - |-
+            {
+              "StartAt": "SampleFunction",
+              "States": {
+                "SampleFunction": {
+                  "Type": "Task",
+                  "Resource": "${functionsampleArn}",
+                  "ResultPath": "$.results",
+                  "Next": "MapState"
+                },
+                "MapState": {
+                  "Type": "Map",
+                  "ItemsPath": "$.results",
+                  "Parameters": {
+                    "result.$": "$$.Map.Item.Value",
+                    "param1.$": "$.param1",
+                    "param2.$": "$.param2"
+                  },
+                  "Iterator": {
+                    "StartAt": "PassState",
+                    "States": {
+                      "PassState": {
+                        "Type": "Pass",
+                        "End": true
+                      }
+                    }
+                  },
+                  "End": true
+                }
+              }
+            }
+          - functionsampleArn:
+              Ref: functionsampleArn
+      RoleArn:
+        Fn::GetAtt:
+          - StatesExecutionRole
+          - Arn
+  SampleStepTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::Join:
+          - ''
+          - - sampleStepTopic
+            - '-'
+            - Ref: env
+  SampleStepFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Join:
+          - ''
+          - - SampleStep-Failed-Alarm
+            - '-'
+            - Ref: env
+      ActionsEnabled: true
+      OKActions: []
+      AlarmActions:
+        - Ref: SampleStepTopic
+      InsufficientDataActions: []
+      MetricName: ExecutionsFailed
+      Namespace: AWS/States
+      Statistic: Sum
+      Dimensions:
+        - Name: StateMachineArn
+          Value:
+            Ref: SampleStepStateMachine
+      Period: 3600
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: missing
+  SampleStepTimedOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Join:
+          - ''
+          - - SampleStep-TimedOut-Alarm
+            - '-'
+            - Ref: env
+      ActionsEnabled: true
+      OKActions: []
+      AlarmActions:
+        - Ref: SampleStepTopic
+      InsufficientDataActions: []
+      MetricName: ExecutionsTimedOut
+      Namespace: AWS/States
+      Statistic: Sum
+      Dimensions:
+        - Name: StateMachineArn
+          Value:
+            Ref: SampleStepStateMachine
+      Period: 3600
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: missing
+Outputs:
+  Arn:
+    Value:
+      Ref: SampleStepStateMachine
+  Region:
+    Value:
+      Ref: AWS::Region
+  RoleName:
+    Value:
+      Ref: StatesExecutionRole
