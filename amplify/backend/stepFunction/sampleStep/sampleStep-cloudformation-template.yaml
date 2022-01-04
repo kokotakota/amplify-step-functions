@@ -55,8 +55,25 @@ Resources:
         Fn::Sub:
           - |-
             {
-              "StartAt": "SampleFunction",
+              "StartAt": "ParallelState",
               "States": {
+                "ParallelState": {
+                  "Comment": "Parallelの出力は並列処理した各Stateの結果配列になる。結果が不要で、Stateの入力をそのまま後続でも使用する場合はResultPathをnullにする。",
+                  "Type": "Parallel",
+                  "Branches": [
+                    {
+                      "StartAt": "ParallelPassState",
+                      "States": {
+                        "ParallelPassState": {
+                          "Type": "Pass",
+                          "End": true
+                        }
+                      }
+                    }
+                  ],
+                  "ResultPath": null,
+                  "Next": "SampleFunction"
+                },
                 "SampleFunction": {
                   "Type": "Task",
                   "Resource": "${functionsampleArn}",
@@ -64,6 +81,7 @@ Resources:
                   "Next": "MapState"
                 },
                 "MapState": {
+                  "Comment": "入力となる配列のパスをItemsPathで指定する。",
                   "Type": "Map",
                   "ItemsPath": "$.results",
                   "Parameters": {
@@ -72,9 +90,9 @@ Resources:
                     "param2.$": "$.param2"
                   },
                   "Iterator": {
-                    "StartAt": "PassState",
+                    "StartAt": "MapPassState",
                     "States": {
-                      "PassState": {
+                      "MapPassState": {
                         "Type": "Pass",
                         "End": true
                       }
